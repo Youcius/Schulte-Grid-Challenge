@@ -41,7 +41,7 @@
 
         .container {
             width: 100%;
-            max-width: 800px;
+            max-width: 1000px;
             background-color: var(--light);
             border-radius: var(--border-radius);
             box-shadow: var(--shadow);
@@ -68,7 +68,6 @@
             font-size: 1rem;
         }
 
-        /* 修改后的刷新按钮样式 */
         .header-refresh-btn {
             background: none;
             border: none;
@@ -175,7 +174,6 @@
             width: 100%;
         }
 
-        /* 修改后的计时器样式 */
         .timer-container {
             display: flex;
             flex-direction: column;
@@ -198,7 +196,6 @@
             color: var(--dark-gray);
         }
 
-        /* 进度条容器样式 */
         .progress-container {
             position: relative;
             width: 100%;
@@ -209,7 +206,6 @@
             box-shadow: var(--shadow);
         }
 
-        /* 进度条样式 */
         .progress-bar {
             height: 100%;
             border-radius: 20px;
@@ -217,7 +213,6 @@
             background: linear-gradient(90deg, #4CAF50, #8BC34A, #FFC107, #FF9800, #FF5722);
         }
 
-        /* 剩余时间文本样式 - 固定在容器中间 */
         .time-text {
             position: absolute;
             left: 50%;
@@ -259,6 +254,8 @@
             transition: var(--transition);
             aspect-ratio: 1/1;
             user-select: none;
+            -webkit-backface-visibility: hidden; /* 防止抖动时出现闪烁  */
+            backface-visibility: hidden;
         }
 
         .cell:hover {
@@ -274,6 +271,19 @@
             background-color: var(--medium-gray);
             color: var(--dark-gray);
             cursor: default;
+        }
+
+        /* 新增的错误提示样式 */
+        .cell.error {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+            background-color: #FFEBEE; /* 浅红色背景  */
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translateX(-1px); }
+            20%, 80% { transform: translateX(2px); }
+            30%, 50%, 70% { transform: translateX(-4px); }
+            40%, 60% { transform: translateX(4px); }
         }
 
         .result {
@@ -413,7 +423,6 @@
             </div>
         </div>
 
-        <!-- 移动到标题下方的刷新按钮 -->
         <button class="header-refresh-btn" id="headerRefreshBtn" title="重新开始">
             <svg class="header-refresh-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21.5 2v6h-6M2.5 22v-6h6"/>
@@ -423,10 +432,8 @@
 
         <div class="game-display">
             <div class="timer-container">
-                <!-- 进度条容器 -->
                 <div class="progress-container">
                     <div class="progress-bar" id="progressBar"></div>
-                    <!-- 固定在容器中间的时间文本 -->
                     <div class="time-text" id="timeText">30.000</div>
                 </div>
             </div>
@@ -463,12 +470,10 @@
         let gridSize = 5;
         let previousTime;
         
-        // 根据网格尺寸和挑战模式获取时间限制
         function getTimeLimit() {
             const gridSize = parseInt(gridSizeSelect.value);
             const challengeMode = challengeModeSelect.value;
             
-            // 基准时间（5×5网格的标准模式）
             let baseTime;
             
             switch(challengeMode) {
@@ -491,28 +496,23 @@
                     baseTime = 30;
             }
             
-            // 根据网格尺寸调整时间（难度更高）
             const sizeFactor = Math.pow(gridSize / 5, 1.8);
             return Math.round(baseTime * sizeFactor);
         }
         
-        // 初始化网格
         function initializeGrid() {
             gridSize = parseInt(gridSizeSelect.value);
             grid.innerHTML = '';
             cells = [];
             
-            // 设置网格样式
-            const cellSize = Math.max(50, 100 - gridSize * 5);
+            const cellSize = Math.max(60, 120 - gridSize * 5);
             grid.style.gridTemplateColumns = `repeat(${gridSize}, ${cellSize}px)`;
             grid.style.gridTemplateRows = `repeat(${gridSize}, ${cellSize}px)`;
             
-            // 创建数字数组
             const totalNumbers = gridSize * gridSize;
             numbers = Array.from({length: totalNumbers}, (_, i) => i + 1);
             shuffleArray(numbers);
             
-            // 创建单元格
             for (let i = 0; i < totalNumbers; i++) {
                 const cell = document.createElement('div');
                 cell.className = 'cell';
@@ -520,8 +520,7 @@
                 cell.dataset.number = numbers[i];
                 cell.addEventListener('click', handleCellClick);
                 
-                // 根据网格尺寸调整字体大小
-                const fontSize = Math.max(14, 24 - (gridSize - 5) * 1.5);
+                const fontSize = Math.max(16, 28 - (gridSize - 5) * 1.5);
                 cell.style.fontSize = `${fontSize}px`;
                 
                 grid.appendChild(cell);
@@ -529,14 +528,12 @@
             }
         }
         
-        // 显示数字
         function showNumbers() {
             cells.forEach(cell => {
                 cell.textContent = cell.dataset.number;
             });
         }
         
-        // 洗牌算法
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -545,7 +542,6 @@
             return array;
         }
         
-        // 处理单元格点击
         function handleCellClick(e) {
             if (!gameActive) return;
             
@@ -559,23 +555,24 @@
                 
                 currentNumber++;
                 
-                // 检查是否完成
                 if (currentNumber > (gridSize * gridSize)) {
                     endGame(true);
                 }
+            } else {
+                // 新增错误提示效果
+                cell.classList.add('error');
+                setTimeout(() => {
+                    cell.classList.remove('error');
+                }, 500);
             }
         }
         
-        // 更新计时器显示
         function updateTimerDisplay(time) {
-            // 显示到小数点后2位
             timeText.textContent = time.toFixed(2);
             
-            // 更新进度条
             const percentage = time / getTimeLimit();
             progressBar.style.width = `${percentage * 100}%`;
             
-            // 根据剩余时间改变颜色
             if (percentage <= 0.2) {
                 progressBar.style.background = 'linear-gradient(90deg, #FF5722, #FF9800)';
             } else if (percentage <= 0.5) {
@@ -585,7 +582,6 @@
             }
         }
         
-        // 计算表现评级
         function calculatePerformanceRating(timeUsed, size) {
             const standards = {
                 4: { excellent: 16, good: 26, poor: 50 },
@@ -609,11 +605,9 @@
             }
         }
         
-        // 开始游戏
         function startGame() {
             if (gameActive) return;
             
-            // 隐藏开始覆盖层
             startOverlay.style.display = 'none';
             
             initializeGrid();
@@ -622,7 +616,6 @@
             gameActive = true;
             startTime = new Date().getTime();
             
-            // 设置计时器
             timeLeft = getTimeLimit();
             previousTime = timeLeft;
             updateTimerDisplay(timeLeft);
@@ -641,13 +634,12 @@
                 if (timeLeft <= 0) {
                     endGame(false);
                 }
-            }, 16); // 约60fps的更新频率
+            }, 16);
                 
             resultDisplay.textContent = '';
             resultDisplay.style.display = 'none';
         }
         
-        // 结束游戏
         function endGame(success) {
             gameActive = false;
             clearInterval(timerInterval);
@@ -671,7 +663,6 @@
             }
         }
         
-        // 重置游戏
         function resetGame() {
             clearInterval(timerInterval);
             gameActive = false;
@@ -684,24 +675,17 @@
             startOverlay.style.display = 'flex';
         }
         
-        // 点击表格区域开始游戏
         startOverlay.addEventListener('click', startGame);
-        
-        // 刷新按钮点击事件
         headerRefreshBtn.addEventListener('click', resetGame);
-        
-        // 网格尺寸或挑战模式变化时更新显示的时间
         gridSizeSelect.addEventListener('change', function() {
             updateTimerDisplay(getTimeLimit());
             resetGame();
         });
-        
         challengeModeSelect.addEventListener('change', function() {
             updateTimerDisplay(getTimeLimit());
             resetGame();
         });
         
-        // 初始化
         resetGame();
     </script>
 </body>
